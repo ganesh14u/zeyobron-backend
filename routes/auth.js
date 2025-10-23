@@ -102,7 +102,12 @@ router.post('/forgot-password', async (req, res) => {
       });
     } catch (emailError) {
       // If email fails, still return success to prevent email enumeration
-      console.error('Email sending failed:', emailError);
+      console.error('Email sending failed:', emailError.message);
+      console.error('Email config check:', {
+        hasEmailUser: !!process.env.EMAIL_USER,
+        hasEmailPass: !!process.env.EMAIL_PASS,
+        emailUser: process.env.EMAIL_USER
+      });
       res.json({ 
         message: 'Password reset link sent to your email'
       });
