@@ -112,7 +112,13 @@ export const sendPasswordResetEmail = async (email, resetToken, userName) => {
     return result;
   } catch (error) {
     console.error('Error sending password reset email:', error);
-    throw new Error('Failed to send password reset email');
+    console.error('Email config check:', {
+      hasEmailUser: !!process.env.EMAIL_USER,
+      hasEmailPass: !!process.env.EMAIL_PASS,
+      emailUser: process.env.EMAIL_USER,
+      clientUrl: process.env.CLIENT_URL
+    });
+    throw new Error('Failed to send password reset email: ' + error.message);
   }
 };
 
@@ -204,7 +210,13 @@ export const sendWelcomeEmail = async (email, userName) => {
     return result;
   } catch (error) {
     console.error('Error sending welcome email:', error);
-    throw new Error('Failed to send welcome email');
+    console.error('Email config check:', {
+      hasEmailUser: !!process.env.EMAIL_USER,
+      hasEmailPass: !!process.env.EMAIL_PASS,
+      emailUser: process.env.EMAIL_USER,
+      clientUrl: process.env.CLIENT_URL
+    });
+    throw new Error('Failed to send welcome email: ' + error.message);
   }
 };
 
