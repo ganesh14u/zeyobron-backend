@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import User from '../models/User.js';
 import { protect } from '../middleware/auth.js';
+import { sendPasswordResetEmail, sendWelcomeEmail } from '../services/emailService.js';
 
 const router = express.Router();
 
@@ -22,6 +23,14 @@ router.post('/signup', async (req, res) => {
     subscribedCategories: ['Big Data Free'],
     subscription: 'free'
   });
+  
+  // Send welcome email
+  try {
+    await sendWelcomeEmail(email, name);
+  } catch (emailError) {
+    console.error('Welcome email failed:', emailError);
+    // Don't fail signup if email fails
+  }
   
   const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET);
   res.json({ 
@@ -78,18 +87,26 @@ router.post('/forgot-password', async (req, res) => {
 
     // Generate reset token
     const resetToken = crypto.randomBytes(32).toString('hex');
-    user.resetPasswordToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+    const resetPasswordToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+    
+    user.resetPasswordToken = resetPasswordToken;
     user.resetPasswordExpires = Date.now() + 3600000; // 1 hour
     await user.save();
 
-    // In production, send email with reset link
-    // For now, return the token (remove in production!)
-    const resetUrl = `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
-    
-    res.json({ 
-      message: 'Password reset link sent to email',
-      resetUrl // Remove this in production!
-    });
+    // Send email with reset link
+    try {
+      await sendPasswordResetEmail(user.email, resetToken, user.name);
+      res.json({ 
+        message: 'Password reset link sent to your email',
+        // Don't send the actual URL in production for security
+      });
+    } catch (emailError) {
+      // If email fails, still return success to prevent email enumeration
+      console.error('Email sending failed:', emailError);
+      res.json({ 
+        message: 'Password reset link sent to your email'
+      });
+    }
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
